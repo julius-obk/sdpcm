@@ -23,31 +23,31 @@ package Picowi.PIO_SPI_Code is
 
    Picowi_Pio_Program_Instructions : RP.PIO.Program := (
                     --  .wrap_target
-         16#80a0#,  --   0: pull   block           side 0
-         16#a042#,  --   1: nop                    side 0
-         16#6001#,  --   2: out    pins, 1         side 0
-         16#10e1#,  --   3: jmp    !osre, 1        side 1
-                    --  .wrap
-         16#80a0#,  --   4: pull   block           side 0
-         16#6020#,  --   5: out    x, 32           side 0
-         16#e047#,  --   6: set    y, 7            side 0
-         16#b042#,  --   7: nop                    side 1
+         16#80a0#,  --   0: pull   block           side 0 -- pull data from tx fifo to OSRE(output shift register), stall if tx fifo is empty, 
+         16#a042#,  --   1: nop                    side 0 -- no operation
+         16#6001#,  --   2: out    pins, 1         side 0 -- shift out one bit from OSRE to ouput pin/gpio
+         16#10e1#,  --   3: jmp    !osre, 1        side 1 -- jump to line 1 if OSRE is not empty, HIFTCTRL_PULL_THRESH. was set to 8 (less then 8 shifts)
+                    --  .wrap                             -- if jmp on line 3, was not done then wrap/jump back to line 0  
+         16#80a0#,  --   4: pull   block           side 0  -- pull data from tx fifo to OSRE, (block => stall if OSRE is empty)
+         16#6020#,  --   5: out    x, 32           side 0  --shift 32 bits from OSR to skretch register x 
+         16#e047#,  --   6: set    y, 7            side 0  -- set skretch reg y to 7
+         16#b042#,  --   7: nop                    side 1 
          16#b042#,  --   8: nop                    side 1
          16#b042#,  --   9: nop                    side 1
-         16#4001#,  --  10: in     pins, 1         side 0
-         16#0087#,  --  11: jmp    y--, 7          side 0
-         16#8020#,  --  12: push   block           side 0
-         16#0046#,  --  13: jmp    x--, 6          side 0
-         16#0004#,  --  14: jmp    4               side 0
-         16#80a0#,  --  15: pull   block           side 0
-         16#6020#,  --  16: out    x, 32           side 0
-         16#e047#,  --  17: set    y, 7            side 0
-         16#a042#,  --  18: nop                    side 0
-         16#4001#,  --  19: in     pins, 1         side 0
+         16#4001#,  --  10: in     pins, 1         side 0 -- read one bit from pins to ISRE (input shift register)
+         16#0087#,  --  11: jmp    y--, 7          side 0 -- if y not 0 then jump to line 7 and count y one down
+         16#8020#,  --  12: push   block           side 0 -- push to RX fifo, stall if RX fifo is full
+         16#0046#,  --  13: jmp    x--, 6          side 0 -- jump to line 6 if x not 0 and count x one down
+         16#0004#,  --  14: jmp    4               side 0 -- jump to line 4
+         16#80a0#,  --  15: pull   block           side 0 -- pull pull data from tx fifo to OSRE, (block => stall if OSRE is empty)
+         16#6020#,  --  16: out    x, 32           side 0 --shift 32 bits from OSR to skretch register x 
+         16#e047#,  --  17: set    y, 7            side 0 -- set skretch reg y to 7
+         16#a042#,  --  18: nop                    side 0 
+         16#4001#,  --  19: in     pins, 1         side 0 -- read one bit from pins to ISRE (input shift register)
          16#b042#,  --  20: nop                    side 1
-         16#1092#,  --  21: jmp    y--, 18         side 1
-         16#8020#,  --  22: push   block           side 0
-         16#0051#,  --  23: jmp    x--, 17         side 0
-         16#000f#); --  24: jmp    15              side 0
+         16#1092#,  --  21: jmp    y--, 18         side 1 --jump to line 18, if y not = 0 and decrease y by one
+         16#8020#,  --  22: push   block           side 0 -- push to RX fifo, stall if RX fifo is full
+         16#0051#,  --  23: jmp    x--, 17         side 0 -- jump to line 17, if x not = 0 and decrease x by one
+         16#000f#); --  24: jmp    15              side 0 -- jump to line 15
 
 end Picowi.PIO_SPI_Code;

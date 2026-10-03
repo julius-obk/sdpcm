@@ -5,4 +5,5 @@
 
 package Picowi is
    pragma Pure;
+   type Event_Callback_Access_Type is access procedure;
 end Picowi;

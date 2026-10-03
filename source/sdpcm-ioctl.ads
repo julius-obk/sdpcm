@@ -26,15 +26,35 @@ package SDPCM.IOCTL is
    SET_VAR      : constant Command := 263;
    SET_WSEC_PMK : constant Command := 268;
 
+   --    --
+   --     WLC_GET_SSID (25)
+   --  WLC_SET_SSID (26)
+   --  WLC_SET_CHANNEL (30)
+   --  WLC_DISASSOC (52)
+   --  WLC_GET_ANTDIV (63)
+   --  WLC_SET_ANTDIV (64)
+   --  WLC_SET_DTIMPRD (78)
+   --  WLC_GET_PM (85)
+   --  WLC_SET_PM (86)
+   --  WLC_SET_GMODE (110)
+   --  WLC_SET_WSEC (134)
+   --  WLC_SET_BAND (142)
+   --  WLC_GET_ASSOCLIST (159)
+   --  WLC_SET_WPA_AUTH (165)
+   --  WLC_SET_VAR (263)
+   --  WLC_GET_VAR (262)
+   --  WLC_SET_WSEC_PMK (268)
+
    generic
       with function Data_Offset return Positive;
 
-      with procedure Set_In_Place
-        (Buffer  : in out Buffer_Byte_Array;
-         Command : IOCTL.Command;
-         Write   : Boolean);
+      with
+        procedure Set_In_Place
+          (Buffer  : in out Buffer_Byte_Array;
+           Command : IOCTL.Command;
+           Write   : Boolean);
 
-   procedure Set
+     procedure Set
      (Buffer  : in out Buffer_Byte_Array;
       Command : IOCTL.Command;
       Name    : Byte_Array;
@@ -51,9 +71,7 @@ package SDPCM.IOCTL is
    generic
       with package Bus is new SDPCM.Generic_Bus (<>);
    procedure Send_Buffer
-     (Buffer : in out Buffer_Byte_Array;
-      From   : Positive;
-      To     : Positive);
+     (Buffer : in out Buffer_Byte_Array; From : Positive; To : Positive);
 
    function Data_Offset (Write_Prefix_Length : Natural) return Positive;
 
@@ -65,13 +83,14 @@ package SDPCM.IOCTL is
       Status     : Interfaces.Unsigned_32;
    end record;
 
-   for IOCTL_Header use record
-      Command    at 0 range 0 .. 31;
-      Out_Length at 4 range 0 .. 15;
-      In_Length  at 6 range 0 .. 15;
-      Flags      at 8 range 0 .. 31;
-      Status     at 12 range 0 .. 31;
-   end record;
+   for IOCTL_Header use
+     record
+       Command    at 0  range 0 .. 31;
+       Out_Length at 4  range 0 .. 15;
+       In_Length  at 6  range 0 .. 15;
+       Flags      at 8  range 0 .. 31;
+       Status     at 12 range 0 .. 31;
+     end record;
 
    type IO_Variable is
      (None,
@@ -92,11 +111,10 @@ package SDPCM.IOCTL is
       bsscfg_sup_wpa_tmo,
       cur_etheraddr);
 
-   subtype Output_Variable is IO_Variable
-   range None .. bsscfg_sup_wpa_tmo;
+   subtype Output_Variable is IO_Variable range None .. bsscfg_sup_wpa_tmo;
 
-   function To_Name (Name : IO_Variable) return String is
-     (case Name is
+   function To_Name (Name : IO_Variable) return String
+   is (case Name is
          when None                   => "",
          when country                => "country",
          when cur_etheraddr          => "cur_etheraddr",
@@ -114,21 +132,29 @@ package SDPCM.IOCTL is
          when bsscfg_sup_wpa         => "bsscfg:sup_wpa",
          when bsscfg_sup_wpa2_eapver => "bsscfg:sup_wpa2_eapver",
          when bsscfg_sup_wpa_tmo     => "bsscfg:sup_wpa_tmo")
-        with Static;
+   with Static;
 
-   function To_Raw_Name (Name : IO_Variable) return Byte_Array is
-     (if Name = None then []
-      else [for X of To_Name (Name) => Character'Pos (X)] & 0);
+   function To_Raw_Name (Name : IO_Variable) return Byte_Array
+   is (if Name = None
+       then []
+       else [for X of To_Name (Name) => Character'Pos (X)] & 0);
 
    XX_Country : constant Byte_Array (1 .. 20) :=
-     [16#58#, 16#58#, 16#00#, 16#00#, 16#FF#, 16#FF#, 16#FF#, 16#FF#,
-      16#58#, 16#58#, others => 16#00#];
+     [16#58#,
+      16#58#,
+      16#00#,
+      16#00#,
+      16#FF#,
+      16#FF#,
+      16#FF#,
+      16#FF#,
+      16#58#,
+      16#58#,
+      others => 16#00#];
    --  "XX\x00\x00\xFF\xFF\xFF\xFFXX"
 
    Multicast_List : constant Byte_Array (1 .. 6 * 10) :=
-     [1, 0, 0, 0,
-      16#01#, 16#00#, 16#5E#, 16#00#, 16#00#, 16#FB#,
-      others => 0];
+     [1, 0, 0, 0, 16#01#, 16#00#, 16#5E#, 16#00#, 16#00#, 16#FB#, others => 0];
 
    SUP_WPA : constant Byte_Array (1 .. 8) :=
      [16#00#, 16#00#, 16#00#, 16#00#, 16#01#, 16#00#, 16#00#, 16#00#];
@@ -140,20 +166,19 @@ package SDPCM.IOCTL is
      [16#00#, 16#00#, 16#00#, 16#00#, 16#C4#, 16#09#, 16#00#, 16#00#];
 
    function Raw_Value
-     (Name    : Output_Variable;
-      Command : IOCTL.Command) return Byte_Array is
-     (case Command is
+     (Name : Output_Variable; Command : IOCTL.Command) return Byte_Array
+   is (case Command is
          when IOCTL.UP => [],
-         when others =>
-        (case Name is
-            when country => XX_Country,
-            when bsscfg_event_msgs =>
-               Events.To_Raw_Event_Mask (Events.To_Mask (Events.Join_Events)),
-            when mcast_list => Multicast_List,
-            when bsscfg_sup_wpa => SUP_WPA,
-            when bsscfg_sup_wpa2_eapver => SUP_WPA2_EAPVER,
-            when bsscfg_sup_wpa_tmo => SUP_WPA_TMO,
-            when others => raise Program_Error));
+         when others   =>
+           (case Name is
+              when country                => XX_Country,
+              when bsscfg_event_msgs      =>
+                Events.To_Raw_Event_Mask (Events.To_Mask (Events.Join_Events)),
+              when mcast_list             => Multicast_List,
+              when bsscfg_sup_wpa         => SUP_WPA,
+              when bsscfg_sup_wpa2_eapver => SUP_WPA2_EAPVER,
+              when bsscfg_sup_wpa_tmo     => SUP_WPA_TMO,
+              when others                 => raise Program_Error));
 
    function Encode
      (Value : String; X : Interfaces.Unsigned_8) return Byte_Array;
